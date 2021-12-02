@@ -17,7 +17,7 @@ import (
 // debugHandshake, if set, prints messages sent and received.  Key
 // exchange messages are printed as if DH were used, so the debug
 // messages are wrong when using ECDH.
-const debugHandshake = false
+const debugHandshake = true
 
 // chanSize sets the amount of buffering SSH connections. This is
 // primarily for testing: setting chanSize=0 uncovers deadlocks more
@@ -179,7 +179,7 @@ func (t *handshakeTransport) printPacket(p []byte, write bool) {
 		log.Printf("%s %s data (packet %d bytes)", t.id(), action, len(p))
 	} else {
 		msg, err := decode(p)
-		log.Printf("%s %s %T %v (%v)", t.id(), action, msg, msg, err)
+		log.Printf("%s %s %T %#v (%v)", t.id(), action, msg, msg, err)
 	}
 }
 
@@ -582,6 +582,7 @@ func (t *handshakeTransport) enterKeyExchange(otherInitPacket []byte) error {
 		}
 	}
 
+	log.Printf("ssh.findAgreedAlgorithms\n  kex: %s\n  hostKey: %s\n", t.algorithms.kex, t.algorithms.hostKey)
 	kex, ok := kexAlgoMap[t.algorithms.kex]
 	if !ok {
 		return fmt.Errorf("ssh: unexpected key exchange algorithm %v", t.algorithms.kex)

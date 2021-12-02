@@ -17,6 +17,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net"
 	"os"
 	"strings"
@@ -363,6 +364,7 @@ func (db *hostKeyDB) checkAddr(a addr, remoteKey ssh.PublicKey) error {
 	for _, l := range db.lines {
 		if l.match(a) {
 			typ := l.knownKey.Key.Type()
+			log.Printf("knownhosts.checkAddr\n  matching key: %s %s\n", typ, a.String())
 			if _, ok := knownKeys[typ]; !ok {
 				knownKeys[typ] = l.knownKey
 			}
@@ -376,6 +378,7 @@ func (db *hostKeyDB) checkAddr(a addr, remoteKey ssh.PublicKey) error {
 
 	// Unknown remote host.
 	if len(knownKeys) == 0 {
+		fmt.Println("checkAddr.unknownHost")
 		return keyErr
 	}
 
@@ -430,7 +433,11 @@ func New(files ...string) (ssh.HostKeyCallback, error) {
 	var certChecker ssh.CertChecker
 	certChecker.IsHostAuthority = db.IsHostAuthority
 	certChecker.IsRevoked = db.IsRevoked
-	certChecker.HostKeyFallback = db.check
+	check := func(address string, remote net.Addr, remoteKey ssh.PublicKey) error {
+		log.Printf("ssh.HostKeyCallback\n  address: %s\n  remote: %s\n  remoteKey\n    type: %s\n    data: %s\n", address, remote, remoteKey.Type(), string(remoteKey.Marshal()))
+		return db.check(address, remote, remoteKey)
+	}
+	certChecker.HostKeyFallback = check
 
 	return certChecker.CheckHostKey, nil
 }
